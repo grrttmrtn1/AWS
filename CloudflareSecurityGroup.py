@@ -16,8 +16,19 @@ def lambda_handler(event, context):
             if (rule['ToPort']) == 443:
                 for range in rule['IpRanges']:
                     #print(range['CidrIp'])
-                    sgIPs.append(range['CidrIp'])
-                
+                    if range['CidrIp'].strip() != homeIP:
+                        if range['CidrIp'] in cloudflareIPs:
+                            sgIPs.append(range['CidrIp'])
+                        else:
+                            print("Remove " + range['CidrIp'])
+                            ec2.revoke_security_group_ingress(
+                                GroupId=security_group_id,
+                                IpPermissions=[
+                                    {'IpProtocol': 'tcp',
+                                     'FromPort': 443,
+                                     'ToPort': 443,
+                                     'IpRanges': [{'CidrIp': range['CidrIp']}]}
+                                ])
                 for ip in cloudflareIPs:
                     if ip not in sgIPs and range['CidrIp'] != homeIP:
                         print(ip)
